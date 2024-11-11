@@ -56,3 +56,26 @@ def generate_report_graph(results_dir):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+def save_report(mode, score, missed):
+    """Saves the quiz results as a JSON report."""
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)  # Create directory if it doesn't exist
+    
+    # Timestamp for file name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{results_dir}/{mode}_{timestamp}.json"
+    
+    # Report content
+    report = {
+        "mode": mode,
+        "timestamp": datetime.now().isoformat(),
+        "score": score,
+        "missed_words": missed
+    }
+    
+    # Save as JSON file
+    with open(filename, 'w') as f:
+        json.dump(report, f, indent=4)
+    
+    print(f"{mode.capitalize()} report saved as '{filename}'.")

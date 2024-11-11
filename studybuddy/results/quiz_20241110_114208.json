@@ -1,0 +1,40 @@
+{
+    "mode": "quiz",
+    "timestamp": "2024-11-10T11:42:08.357120",
+    "score": 8.333333333333332,
+    "missed_words": [
+        {
+            "Hochzeit": "Wedding"
+        },
+        {
+            "Schmuck": "Jewellery"
+        },
+        {
+            "Veranda": "Porch"
+        },
+        {
+            "Dose": "Tinned"
+        },
+        {
+            "Braten": "Fry"
+        },
+        {
+            "Schweinefleisch": "Pork"
+        },
+        {
+            "Ereignis": "Occasion"
+        },
+        {
+            "Blaskapelle": "Brass Band"
+        },
+        {
+            "Gefrieren": "Freeze"
+        },
+        {
+            "Empfehlen": "Recommend"
+        },
+        {
+            "Er hat es selbst get\u00f6tet": "He killed it himself"
+        }
+    ]
+}
