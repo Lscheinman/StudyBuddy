@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-from models.models import User
-from models.schemas import RegisterRequest
+from models import User
+from schemas import RegisterRequest
 from utils.utils import create_access_token
 from database import get_db
 
@@ -15,7 +15,7 @@ def register_user(user: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == user.username).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
     
-    new_user = User(username=user.username, hashed_password=User.hash_password(user.password))
+    new_user = User(username=user.username, password=User.hash_password(user.password))
     db.add(new_user)
     db.commit()
     return {"message": "User registered successfully"}

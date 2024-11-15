@@ -1,23 +1,25 @@
-# main.py
+# Standard Library Imports
+import logging
 
+# Third-Party Library Imports
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Application Imports
 from database import Base, engine
-from routes import user_routes, quiz_routes
+from models import User, Quiz, Report  # Import models to ensure tables are created
+from routes import user_routes, quiz_routes, report_routes
 
-# Initialize database
-Base.metadata.create_all(bind=engine)
+# Application Initialization
+Base.metadata.create_all(bind=engine)  # Initialize database tables
 
-# Initialize the FastAPI app with custom documentation settings
 app = FastAPI(
     title="StudyBuddy API",
-    description="API for the StudyBuddy Quiz application, providing endpoints for quiz questions, answers, scoring, and CSV uploads.",
-    version="1.0.0",
-    docs_url="/docs",      # Swagger UI documentation URL
-    redoc_url="/redoc"     # ReDoc documentation URL
+    description="An API for quizzes and reports.",
+    version="1.0.0"
 )
 
-# CORS settings
+# CORS Middleware
 origins = ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
@@ -27,9 +29,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(user_routes.router, prefix="/users", tags=["users"])
-app.include_router(quiz_routes.router, prefix="/quizzes", tags=["quizzes"])
+# Add Routers
+app.include_router(user_routes.router, prefix="/users", tags=["Users"])
+app.include_router(quiz_routes.router, prefix="/quizzes", tags=["Quizzes"])
+app.include_router(report_routes.router, prefix="/reports", tags=["Reports"])
+
+# Debug or initialization hooks (if any)
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,10 +1,8 @@
-// frontend/src/pages/Login.js
-
 import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Box, Button, TextField, Typography, Container } from '@mui/material';
+import { Box, Button, TextField, Typography, Container, Divider } from '@mui/material';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -79,6 +77,18 @@ const Login = () => {
             Login
           </Button>
         </form>
+        <Divider style={{ width: '100%', margin: '24px 0' }} />
+        <Typography variant="body1" gutterBottom>
+          Don't have an account?
+        </Typography>
+        <Button
+          variant="outlined"
+          color="secondary"
+          fullWidth
+          onClick={() => navigate('/register')}
+        >
+          Register
+        </Button>
       </Box>
     </Container>
   );

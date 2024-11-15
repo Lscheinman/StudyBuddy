@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 import pandas as pd
 import uuid
 from core.quiz import Quiz
-from models.schemas import AnswerRequest, ScoreResponse
+from schemas import AnswerRequest, ScoreResponse
 from sqlalchemy.orm import Session
 from database import get_db
 

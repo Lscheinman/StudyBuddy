@@ -49,3 +49,19 @@ FastAPI automatically generates interactive documentation:
   
 This setup should give you a fully deployable, containerized FastAPI application, ready for frontend integration and scalable deployment.
 
+
+studybuddy/
+├── routes/
+│   ├── __init__.py          # Combines all route modules
+│   ├── user_routes.py       # User-related routes
+│   ├── quiz_routes.py       # Quiz-related routes
+│   ├── report_routes.py     # Report-related routes
+├── main.py                  # FastAPI app entry point
+├── database.py              # Database connection and Base setup
+├── models/
+│   ├── __init__.py          # Combines all models
+│   ├── user.py              # User model
+│   ├── quiz.py              # Quiz model
+│   ├── report.py            # Report model
+└── ...
+
