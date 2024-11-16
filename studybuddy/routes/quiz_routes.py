@@ -1,95 +1,123 @@
-# routes/quiz_routes.py
-
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
-import pandas as pd
-import uuid
-from core.quiz import Quiz
-from schemas import AnswerRequest, ScoreResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from datetime import datetime
 from database import get_db
+from models import User, Quiz, Report
+from schemas import ReportRequest, ScoreResponse
+from typing import List
+from dependencies import get_current_user
 
 router = APIRouter()
-quiz = Quiz()
 
-@router.get("/")
-async def get_quizzes():
-    """Retrieve all existing quizzes."""
-    quizzes = [{"id": quiz_id, "name": session["name"]} for quiz_id, session in quiz.sessions.items()]
-    return quizzes
+@router.post("/start", status_code=status.HTTP_201_CREATED)
+def start_quiz(quiz_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Start a new quiz session (create a report).
+    """
+    # Fetch the quiz
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    
+    # Increment times accessed
+    quiz.times_accessed += 1
 
-@router.post("/upload-csv")
-async def upload_csv(
-    file: UploadFile = File(...),
-    name: str = Form(...),
+    # Create a new report
+    report = Report(
+        user_id=current_user.id,
+        quiz_id=quiz_id,
+        started_on=datetime.utcnow()
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    
+    return {"report_id": report.id, "started_on": report.started_on}
+
+@router.post("/submit-answer", status_code=status.HTTP_200_OK)
+def submit_answer(
+    report_id: int,
+    question: str,
+    user_answer: str,
+    correct_answer: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Upload a CSV file to create a new quiz session with a unique name and quiz_id."""
-    # Check if the quiz name is already used
-    if any(session["name"] == name for session in quiz.sessions.values()):
-        raise HTTPException(status_code=400, detail="Quiz name already exists. Please choose another name.")
+    """
+    Submit an answer for a specific quiz report.
+    """
+    # Fetch the report
+    report = db.query(Report).filter(Report.id == report_id, Report.user_id == current_user.id).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
 
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="File must be a CSV.")
-
-    try:
-        # Read the CSV file into a DataFrame
-        df = pd.read_csv(file.file)
-
-        # Check for required columns "Q" and "A"
-        if "Q" not in df.columns or "A" not in df.columns:
-            raise HTTPException(status_code=400, detail="CSV must contain 'Q' and 'A' columns.")
-
-        # Convert the DataFrame into a dictionary for vocabulary
-        new_vocabs = dict(zip(df["Q"], df["A"]))
-
-        # Generate a unique quiz_id and create a session with the provided name and vocabulary
-        quiz_id = str(uuid.uuid4())
-        quiz.create_session(quiz_id, new_vocabs, name)
-
-        return {
-            "message": "Vocabulary loaded successfully",
-            "words_added": len(new_vocabs),
-            "quiz_id": quiz_id,
-            "name": name
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process CSV: {str(e)}")
-
-@router.get("/{quiz_id}/question", response_model=str)
-async def get_question(quiz_id: str):
-    """Fetch the next question for the specified quiz."""
-    question = quiz.next_question(quiz_id)
-    if question:
-        return question
-    raise HTTPException(status_code=404, detail="No questions available or invalid quiz ID.")
-
-@router.post("/{quiz_id}/submit-answer")
-async def submit_answer(quiz_id: str, answer: AnswerRequest):
-    """Submit an answer to a quiz question for the specified quiz."""
-    result = quiz.submit_answer(quiz_id, answer.question, answer.user_answer)
-    if result:
-        session = quiz.sessions[quiz_id]
-        current_score = session["points"]
-        total_questions = session["total_questions"]
-        remaining_questions = len(session["questions"])
-
-        # Include the correct answer if the response indicates an incorrect answer
-        correct_answer = result.get("correct_answer") if result["result"] == "wrong" else None
-
-        return {
-            "result": result,
-            "current_score": current_score,
-            "total_questions": total_questions,
-            "remaining_questions": remaining_questions,
-            "correct_answer": correct_answer,
-        }
+    # Log the answer
+    if user_answer.strip().lower() == correct_answer.strip().lower():
+        report.total_correct += 1
+        result = "correct"
     else:
-        raise HTTPException(status_code=404, detail="Quiz session not found.")
+        report.total_incorrect += 1
+        report.incorrect_answers.append({
+            "question": question,
+            "user_answer": user_answer,
+            "correct_answer": correct_answer
+        })
+        result = "incorrect"
 
-@router.get("/{quiz_id}/score", response_model=ScoreResponse)
-async def get_score(quiz_id: str):
-    """Retrieve the current score for the specified quiz."""
-    score = quiz.get_score(quiz_id)
-    if score:
-        return score
-    else:
-        raise HTTPException(status_code=404, detail="Quiz session not found.")
+    db.commit()
+
+    return {"result": result}
+
+@router.post("/complete", status_code=status.HTTP_200_OK)
+def complete_quiz(report_id: int, score: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Mark a quiz session as completed.
+    """
+    # Fetch the report
+    report = db.query(Report).filter(Report.id == report_id, Report.user_id == current_user.id).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    # Mark the report as completed
+    report.completed_on = datetime.utcnow()
+    report.score = score
+
+    # Update quiz statistics
+    quiz = db.query(Quiz).filter(Quiz.id == report.quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+
+    quiz.times_completed += 1
+    quiz.highest_score = max(quiz.highest_score, score)
+    quiz.average_score = ((quiz.average_score * (quiz.times_completed - 1)) + score) / quiz.times_completed
+
+    db.commit()
+
+    return {"completed_on": report.completed_on, "score": score}
+
+@router.get("/history", response_model=List[ScoreResponse], status_code=status.HTTP_200_OK)
+def get_user_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Fetch all reports for the current user.
+    """
+    # Fetch all reports for the current user
+    reports = db.query(Report).filter(Report.user_id == current_user.id).all()
+
+    if not reports:
+        return []
+
+    # Transform the data for the response
+    history = []
+    for report in reports:
+        quiz = db.query(Quiz).filter(Quiz.id == report.quiz_id).first()
+        history.append({
+            "quiz_name": quiz.name,
+            "started_on": report.started_on,
+            "completed_on": report.completed_on,
+            "score": report.score,
+            "total_correct": report.total_correct,
+            "total_incorrect": report.total_incorrect,
+            "incorrect_answers": report.incorrect_answers,
+        })
+
+    return history

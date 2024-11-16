@@ -1,20 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime
 from database import get_db
 from models import User, Quiz, Report
 from schemas import ReportRequest, ScoreResponse
 from typing import List
-from dependencies import get_current_user  # Assumes an auth dependency
+from dependencies import get_current_user
 
 router = APIRouter()
 
-@router.post("/start")
+@router.post("/start", status_code=status.HTTP_201_CREATED)
 def start_quiz(quiz_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Start a new quiz session (create a report).
+    """
     # Fetch the quiz
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
-        raise HTTPException(status_code=404, detail="Quiz not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
     
     # Increment times accessed
     quiz.times_accessed += 1
@@ -31,8 +34,7 @@ def start_quiz(quiz_id: int, db: Session = Depends(get_db), current_user: User =
     
     return {"report_id": report.id, "started_on": report.started_on}
 
-
-@router.post("/submit-answer")
+@router.post("/submit-answer", status_code=status.HTTP_200_OK)
 def submit_answer(
     report_id: int,
     question: str,
@@ -41,12 +43,15 @@ def submit_answer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Submit an answer for a specific quiz report.
+    """
     # Fetch the report
     report = db.query(Report).filter(Report.id == report_id, Report.user_id == current_user.id).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
 
-    # Process the answer
+    # Log the answer
     if user_answer.strip().lower() == correct_answer.strip().lower():
         report.total_correct += 1
         result = "correct"
@@ -63,22 +68,24 @@ def submit_answer(
 
     return {"result": result}
 
-
-@router.post("/complete")
+@router.post("/complete", status_code=status.HTTP_200_OK)
 def complete_quiz(report_id: int, score: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Mark a quiz session as completed.
+    """
     # Fetch the report
     report = db.query(Report).filter(Report.id == report_id, Report.user_id == current_user.id).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
 
     # Mark the report as completed
     report.completed_on = datetime.utcnow()
     report.score = score
 
-    # Update quiz stats
+    # Update quiz statistics
     quiz = db.query(Quiz).filter(Quiz.id == report.quiz_id).first()
     if not quiz:
-        raise HTTPException(status_code=404, detail="Quiz not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
 
     quiz.times_completed += 1
     quiz.highest_score = max(quiz.highest_score, score)
@@ -88,9 +95,11 @@ def complete_quiz(report_id: int, score: float, db: Session = Depends(get_db), c
 
     return {"completed_on": report.completed_on, "score": score}
 
-
-@router.get("/history", response_model=List[ScoreResponse])
+@router.get("/history", response_model=List[ScoreResponse], status_code=status.HTTP_200_OK)
 def get_user_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Fetch all reports for the current user.
+    """
     # Fetch all reports for the current user
     reports = db.query(Report).filter(Report.user_id == current_user.id).all()
 

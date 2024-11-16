@@ -6,3 +6,5 @@ uvicorn
 python-multipart
 database
 sqlalchemy
+passlib
+bcrypt==4.0.1
