@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from models import User, Quiz, Report  # Import models to ensure tables are created
 from routes import user_routes, quiz_routes, report_routes
+from utils.initialize import initialize_database
 
 # Application Initialization
 Base.metadata.create_all(bind=engine)  # Initialize database tables
@@ -18,6 +19,8 @@ app = FastAPI(
     description="An API for quizzes and reports.",
     version="1.0.0"
 )
+
+initialize_database()  # Initialize the database with sample data
 
 # CORS Middleware
 origins = ["http://localhost:3000"]

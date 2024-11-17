@@ -1,13 +1,9 @@
-# models.py
-
+import json
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
 from datetime import datetime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
 from database import Base
-from passlib.context import CryptContext
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class Quiz(Base):
     __tablename__ = "quizzes"
@@ -15,8 +11,10 @@ class Quiz(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)  # Quiz name
+    questions = Column(String, nullable=False)  # Store questions as JSON
     created_on = Column(DateTime, default=datetime.utcnow)  # When the quiz was created
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # Link to User
+    total_questions = Column(Integer, default=0)  # Number of questions in the quiz
 
     # Statistics
     times_accessed = Column(Integer, default=0)  # Number of times the quiz was started
@@ -27,6 +25,16 @@ class Quiz(Base):
     # Relationships
     creator = relationship("User", back_populates="quizzes")
     reports = relationship("Report", back_populates="quiz", cascade="all, delete-orphan")
+
+    # Helper methods for questions
+    def set_questions(self, questions_dict: dict):
+        """Serialize questions into JSON format."""
+        self.questions = json.dumps(questions_dict)
+        self.total_questions = len(questions_dict) 
+
+    def get_questions(self) -> dict:
+        """Deserialize questions from JSON format."""
+        return json.loads(self.questions)
 
     def increment_access_count(self):
         """Increment the times_accessed field."""
@@ -44,16 +52,21 @@ class Quiz(Base):
             self.average_score = total_score / self.times_completed
 
     @classmethod
-    def get_quiz_by_id(cls, db_session, quiz_id: int):
+    def get_quiz_by_id(cls, db_session: Session, quiz_id: int):
         """Fetch a single quiz by ID."""
         return db_session.query(cls).filter(cls.id == quiz_id).first()
 
     @classmethod
-    def get_all_quizzes(cls, db_session):
+    def get_quiz_by_name(cls, db_session: Session, name: str):
+        """Fetch a single quiz by Name."""
+        return db_session.query(cls).filter(cls.name == name).first()
+
+    @classmethod
+    def get_all_quizzes(cls, db_session: Session):
         """Fetch all quizzes."""
         return db_session.query(cls).all()
 
     @classmethod
-    def get_quizzes_by_user(cls, db_session, user_id: int):
+    def get_quizzes_by_user(cls, db_session: Session, user_id: int):
         """Fetch all quizzes created by a specific user."""
         return db_session.query(cls).filter(cls.created_by == user_id).all()

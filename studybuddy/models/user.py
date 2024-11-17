@@ -2,9 +2,14 @@
 
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
 from database import Base
 from passlib.context import CryptContext
+from utils.utils import verify_password
+from sqlalchemy.sql import func
+from models.quiz import Quiz
+from models.report import Report
+
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -16,6 +21,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)  # Store hashed passwords
     created_on = Column(DateTime, default=datetime.utcnow)
+    is_admin = Column(Integer, default=0) # 1 if user is an admin, 0 otherwise
 
     # Relationships
     quizzes = relationship("Quiz", back_populates="creator", cascade="all, delete-orphan")
@@ -28,7 +34,7 @@ class User(Base):
         """Verify the provided password against the stored hashed password."""
         from passlib.context import CryptContext
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        return pwd_context.verify(plain_password, hashed_password)
+        return verify_password(plain_password, hashed_password)
 
     @classmethod
     def create_user(cls, db_session, username: str, hashed_password: str):
@@ -52,3 +58,27 @@ class User(Base):
     def username_exists(cls, db_session, username: str):
         """Check if a username already exists."""
         return db_session.query(cls).filter(cls.username == username).first() is not None
+    
+    def to_dict(self, db: Session) -> dict:
+        """
+        Serialize user information to a dictionary.
+        Query related quizzes and reports explicitly.
+        """
+        try:
+            # Debugging outputs
+            print(f"Processing user: {self.username}, ID: {self.id}")
+
+            # Count related quizzes
+            total_quizzes_created = db.query(func.count(Quiz.id)).filter(Quiz.created_by == self.id).scalar()
+            total_reports_created = db.query(func.count(Report.id)).filter(Report.user_id == self.id).scalar()
+
+            return {
+                "id": self.id,
+                "username": self.username,
+                "created_on": self.created_on,
+                "total_quizzes_created": total_quizzes_created,
+                "total_reports_created": total_reports_created,
+            }
+        except Exception as e:
+            print(f"Error serializing user {self.id}: {e}")
+            raise

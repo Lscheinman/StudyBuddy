@@ -4,8 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from database import get_db
 from models.user import User
 from schemas import RegisterRequest
-from utils.utils import create_access_token
+from utils.utils import create_access_token, hash_password
 from passlib.context import CryptContext
+from dependencies import get_current_user
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -45,7 +46,7 @@ def register_user(user: RegisterRequest, db: Session = Depends(get_db)):
         )
     
     # Hash the password and create a new user
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     new_user = User.create_user(db, user.username, hashed_password)
     
     return {"message": "User registered successfully", "user_id": new_user.id}
@@ -81,4 +82,25 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
             detail="User not found"
         )
     
-    return {"username": user.username, "created_on": user.created_on}
+    return user.to_dict(db)
+
+@router.get("/", status_code=status.HTTP_200_OK)
+def get_all_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Retrieve all users with their creation date, quizzes created, and reports generated.
+    Only accessible by admins.
+    """
+    # Ensure current user has admin privileges (example check)
+    if not current_user.is_admin:  # Assuming `is_admin` is a field in the User model
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
+
+    users = db.query(User).all()
+    all_users = [user.to_dict(db) for user in users]
+    return all_users
+
+@router.get("/me", status_code=status.HTTP_200_OK)
+def get_current_user_details(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Retrieve details about the currently authenticated user.
+    """
+    return current_user.to_dict(db)

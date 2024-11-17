@@ -1,5 +1,3 @@
-// frontend/src/context/AuthContext.js
-
 import React, { createContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -7,21 +5,25 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-  }, [token]);
-
-  const login = (newToken) => {
-    setToken(newToken);
+  // Function to handle login
+  const login = (accessToken) => {
+    localStorage.setItem('token', accessToken); // Store the token in local storage
+    setToken(accessToken); // Update the state
   };
 
+  // Function to handle logout
   const logout = () => {
-    setToken(null);
+    localStorage.removeItem('token'); // Clear the token from local storage
+    setToken(null); // Reset the state
   };
+
+  // Check token validity on component mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      setToken(savedToken); // Load the token into state
+    }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ token, login, logout }}>
