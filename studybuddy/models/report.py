@@ -1,26 +1,26 @@
 import random
 from sqlalchemy import Column, Integer, ForeignKey, DateTime, Float, JSON
+from sqlalchemy.ext.mutable import MutableList
 from datetime import datetime
 from sqlalchemy.orm import relationship, Session
 from database import Base
 from models.quiz import Quiz
 from fastapi import HTTPException
 
-
 class Report(Base):
     __tablename__ = "reports"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Link to User
-    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)  # Link to Quiz
-    started_on = Column(DateTime, default=datetime.utcnow)  # When the quiz started
-    completed_on = Column(DateTime, nullable=True)  # When the quiz was completed
-    score = Column(Float, nullable=True)  # Final score
-    total_correct = Column(Integer, default=0)  # Number of correct answers
-    total_incorrect = Column(Integer, default=0)  # Number of incorrect answers
-    incorrect_answers = Column(JSON, default=list)  # Store incorrect answers as JSON
-    asked_questions = Column(JSON, default=list)  # Tracks questions already asked
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
+    started_on = Column(DateTime, default=datetime.utcnow)
+    completed_on = Column(DateTime, nullable=True)
+    score = Column(Float, nullable=True)
+    total_correct = Column(Integer, default=0)
+    total_incorrect = Column(Integer, default=0)
+    incorrect_answers = Column(JSON, default=list)
+    asked_questions = Column(MutableList.as_mutable(JSON), default=list)
 
     # Relationships
     user = relationship("User", back_populates="reports")
@@ -31,15 +31,12 @@ class Report(Base):
         """
         Create a new report for a quiz session.
         """
-        # Ensure quiz exists
-        quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+        quiz = Quiz.get_quiz_by_id(db, quiz_id)
         if not quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
 
-        # Increment quiz access count
         quiz.increment_access_count()
 
-        # Create and save report
         report = Report(
             user_id=user_id,
             quiz_id=quiz_id,
@@ -53,8 +50,13 @@ class Report(Base):
 
     def mark_completed(self, db: Session, score: float):
         """
-        Mark the report as completed and update quiz statistics.
+        Mark the report as completed and update related quiz statistics.
         """
+        if self.completed_on:
+            raise HTTPException(
+                status_code=400, detail="This report has already been completed."
+            )
+
         self.completed_on = datetime.utcnow()
         self.score = score
 
@@ -68,7 +70,7 @@ class Report(Base):
 
     def log_answer(self, question: str, user_answer: str, correct_answer: str) -> str:
         """
-        Log an answer as correct or incorrect.
+        Log an answer as correct or incorrect and update totals.
         """
         if user_answer.strip().lower() == correct_answer.strip().lower():
             self.total_correct += 1
@@ -81,6 +83,14 @@ class Report(Base):
                 "correct_answer": correct_answer,
             })
             return "incorrect"
+
+    def update_asked_questions(self, question: str, db: Session):
+        """
+        Add a question to the list of asked questions.
+        """
+        if question not in self.asked_questions:
+            self.asked_questions.append(question)
+            db.commit()
 
     @classmethod
     def get_reports_by_user(cls, db: Session, user_id: int) -> list:
@@ -102,25 +112,3 @@ class Report(Base):
         Fetch a report by its ID.
         """
         return db.query(cls).filter(cls.id == report_id).first()
-
-    def get_next_question(self, db: Session) -> str:
-        """
-        Fetch the next random question that hasn't been asked yet.
-        """
-        quiz = db.query(Quiz).filter(Quiz.id == self.quiz_id).first()
-        if not quiz:
-            raise HTTPException(status_code=404, detail="Quiz not found")
-
-        all_questions = quiz.get_questions()
-        remaining_questions = [
-            question for question in all_questions.keys()
-            if question not in self.asked_questions
-        ]
-
-        if not remaining_questions:
-            raise HTTPException(status_code=404, detail="No more questions available")
-
-        next_question = random.choice(remaining_questions)
-        self.asked_questions.append(next_question)
-        db.commit()
-        return next_question

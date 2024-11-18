@@ -9,13 +9,22 @@ from dependencies import get_current_user
 
 router = APIRouter()
 
+
 @router.get("/", status_code=status.HTTP_200_OK)
 def list_all_quizzes(db: Session = Depends(get_db)):
     """
     List all quizzes.
     """
     quizzes = Quiz.get_all_quizzes(db)
-    return [{"id": quiz.id, "name": quiz.name, "created_on": quiz.created_on, "total_questions": quiz.total_questions} for quiz in quizzes]
+    return [
+        {
+            "id": quiz.id,
+            "name": quiz.name,
+            "created_on": quiz.created_on,
+            "total_questions": quiz.total_questions,
+        }
+        for quiz in quizzes
+    ]
 
 
 @router.post("/upload-csv", status_code=status.HTTP_201_CREATED)
@@ -28,49 +37,49 @@ async def upload_csv(
     """
     Upload a CSV file to create a new quiz with a unique name.
     """
-    # Check if the quiz name is already in use
     if Quiz.get_quiz_by_name(db, name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quiz name already exists. Please choose another name."
+            detail="Quiz name already exists. Please choose another name.",
         )
-    
+
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be a CSV.")
 
     try:
         # Read the CSV into a DataFrame
         df = pd.read_csv(file.file)
-
-        # Check for required columns "Q" (questions) and "A" (answers)
         if "Q" not in df.columns or "A" not in df.columns:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CSV must contain 'Q' and 'A' columns.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CSV must contain 'Q' and 'A' columns.",
+            )
 
-        # Convert the DataFrame into a dictionary
+        # Create the quiz
         questions = dict(zip(df["Q"], df["A"]))
-
-        # Create a new quiz
         quiz = Quiz(
             name=name,
             questions=questions,
-            created_by=current_user.id,  # Assuming the user ID is available in current_user
+            total_questions=len(questions),
+            created_by=current_user.id,
         )
-
-        quiz.set_questions(questions)  # Serialize questions
-
-        # Add the quiz to the database
+        quiz.set_questions(questions)
         db.add(quiz)
         db.commit()
         db.refresh(quiz)
 
         return {
             "message": "Quiz created successfully",
-            "words_added": len(questions),
-            "quiz_id": quiz.id,
-            "name": name
+            "total_questions": quiz.total_questions,
+            "id": quiz.id,
+            "name": name,
+            "created_on": quiz.created_on,
         }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error processing file: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing file: {str(e)}",
+        )
 
 
 @router.post("/start", status_code=status.HTTP_201_CREATED)
@@ -82,45 +91,23 @@ def start_quiz(
     """
     Start a new quiz session (create a report).
     """
-    # Use centralized report creation logic
+
+    # Get the report and quiz to start the quiz with a first question
     report = Report.create_report(db=db, user_id=current_user.id, quiz_id=quiz_id)
-    return {"report_id": report.id, "started_on": report.started_on}
-
-
-@router.get("/{quiz_id}/question")
-def get_next_question(quiz_id: int, report_id: int, db: Session = Depends(get_db)):
-    """
-    Fetch the next question from the pool of unanswered questions.
-    """
-    # Get the quiz
     quiz = Quiz.get_quiz_by_id(db, quiz_id)
-    if not quiz:
-        raise HTTPException(status_code=404, detail="Quiz not found")
+    all_questions = [q for q in quiz.get_questions().keys()]
+    next_question = random.choice(all_questions)
+    report.update_asked_questions(next_question, db)
 
-    # Get the report for the current quiz session
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=404, detail="Quiz session not found")
-
-    # Fetch all questions and the already-asked questions
-    all_questions = quiz.get_questions()  # Deserialize questions from JSON
-    asked_questions = report.asked_questions  # Directly use as list
-
-    # Get remaining questions
-    remaining_questions = [q for q in all_questions.keys() if q not in asked_questions]
-
-    if not remaining_questions:
-        raise HTTPException(status_code=404, detail="No more questions available")
-
-    # Pick a random question
-    next_question = random.choice(remaining_questions)
-
-    # Add to asked questions and update the report
-    asked_questions.append(next_question)
-    report.asked_questions = asked_questions  # Update in database
-    db.commit()
-
-    return {"question": next_question, "total_questions": quiz.total_questions}
+    return {
+        "status": "in_progress",
+        "total_correct": report.total_correct,
+        "total_incorrect": report.total_incorrect,
+        "next_question": next_question,
+        "total_questions": quiz.total_questions,
+        "report_id": report.id,
+        "started_on": report.started_on
+    }
 
 
 @router.post("/{quiz_id}/submit-answer")
@@ -132,16 +119,16 @@ def submit_answer(
     db: Session = Depends(get_db),
 ):
     """
-    Submit an answer and fetch the next question.
+    Submit an answer and determine the next question or completion status.
     """
     report = Report.get_report_by_id(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
 
-    # Fetch the quiz to validate
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    quiz = Quiz.get_quiz_by_id(db, quiz_id)
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
-    # Validate the question
     all_questions = quiz.get_questions()
     correct_answer = all_questions.get(question)
     if not correct_answer:
@@ -149,36 +136,55 @@ def submit_answer(
 
     # Log the answer
     result = report.log_answer(question, user_answer, correct_answer)
-    db.commit()
+
+    # Determine remaining questions
+    remaining_questions = [
+        q for q in all_questions.keys() if q not in report.asked_questions
+    ]
+
+    if not remaining_questions:
+        # Quiz completed
+        score = (report.total_correct / quiz.total_questions) * 100
+        report.mark_completed(db, score)
+        return {
+            "status": "completed",
+            "message": "Quiz completed!",
+            "total_correct": report.total_correct,
+            "total_incorrect": report.total_incorrect,
+            "score": score,
+        }
 
     # Get the next question
-    next_question = report.get_next_question(db)
+    next_question = random.choice(remaining_questions)
+    report.update_asked_questions(next_question, db)
 
     return {
+        "status": "in_progress",
         "result": result,
         "correct_answer": correct_answer if result == "incorrect" else None,
         "total_correct": report.total_correct,
         "total_incorrect": report.total_incorrect,
-        "total_questions": quiz.total_questions,
         "next_question": next_question,
+        "total_questions": quiz.total_questions,
     }
 
 
-@router.post("/complete", status_code=status.HTTP_200_OK)
-def complete_quiz(report_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+@router.get("/{quiz_id}", status_code=status.HTTP_200_OK)
+def get_quiz_details(quiz_id: int, db: Session = Depends(get_db)):
     """
-    Mark a quiz session as completed.
+    Get details of a specific quiz.
     """
-    # Fetch the report
-    report = db.query(Report).filter(Report.id == report_id, Report.user_id == current_user.id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    quiz = Quiz.get_quiz_by_id(db, quiz_id)
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
 
-    # Finalize the report
-    score = (report.total_correct / (report.total_correct + report.total_incorrect)) * 100 if (report.total_correct + report.total_incorrect) > 0 else 0
-    report.completed_on = datetime.utcnow()
-    report.score = score
-
-    db.commit()
-
-    return {"completed_on": report.completed_on, "score": score}
+    return {
+        "id": quiz.id,
+        "name": quiz.name,
+        "created_on": quiz.created_on,
+        "total_questions": quiz.total_questions,
+        "times_accessed": quiz.times_accessed,
+        "times_completed": quiz.times_completed,
+        "highest_score": quiz.highest_score,
+        "average_score": quiz.average_score,
+    }

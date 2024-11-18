@@ -60,21 +60,9 @@ const Quiz = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      const {
-        status,
-        total_correct,
-        total_incorrect,
-        next_question,
-        total_questions,
-      } = startResponse.data;
 
       const currentReportId = startResponse.data.report_id;
       setReportId(currentReportId); // Store report ID in state
-
-      // Update progress and remaining questions
-      setTotalQuestions((prev) => prev); // Total questions in the quiz (unchanged)
-      setRemainingQuestions((total_questions - (total_correct + total_incorrect)));
-      setQuestion(next_question); // Use the next question from the response
 
       toast.success("Quiz started successfully!", {
         position: "top-right",
