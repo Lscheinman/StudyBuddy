@@ -53,7 +53,7 @@ const Quiz = () => {
     try {
       // Start the quiz
       const startResponse = await axios.post(
-        `http://localhost:8000/quizzes/start`,
+        `${process.env.REACT_APP_BACKEND_URL}/quizzes/start`,
         {},
         {
           params: { quiz_id: quizId },
@@ -103,7 +103,7 @@ const Quiz = () => {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/quizzes/${quizId}/submit-answer`,
+        `${process.env.REACT_APP_BACKEND_URL}/quizzes/${quizId}/submit-answer`,
         null,
         {
           params: {

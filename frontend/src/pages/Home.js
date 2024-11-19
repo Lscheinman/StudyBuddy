@@ -30,7 +30,7 @@ const Home = () => {
     // Fetch all existing quizzes on component mount
     const fetchQuizzes = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/quizzes');
+        const response = await axios.get('${process.env.REACT_APP_BACKEND_URL}/quizzes');
         setQuizzes(response.data);
         setIsLoading(false);
       } catch (error) {
@@ -57,7 +57,7 @@ const Home = () => {
     formData.append('name', quizName);  // Add quiz name to formData
 
     try {
-      const response = await axios.post('http://localhost:8000/upload-csv', formData);
+      const response = await axios.post('${process.env.REACT_APP_BACKEND_URL}/upload-csv', formData);
       const newQuizId = response.data.quiz_id;
       navigate(`/quizzes/${newQuizId}`);
     } catch (error) {

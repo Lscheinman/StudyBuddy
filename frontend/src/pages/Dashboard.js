@@ -19,7 +19,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/users/me', {
+        const response = await axios.get('${process.env.REACT_APP_BACKEND_URL}/users/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUserProfile(response.data);
@@ -33,7 +33,7 @@ const Dashboard = () => {
 
     const fetchQuizzes = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/quizzes', {
+        const response = await axios.get('${process.env.REACT_APP_BACKEND_URL}/quizzes', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setQuizzes(response.data);
@@ -54,7 +54,7 @@ const Dashboard = () => {
   const handleQuizSelect = async (quizId) => {
     setSelectedQuiz(quizId);
     try {
-      const response = await axios.get(`http://localhost:8000/quizzes/${quizId}`, {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/quizzes/${quizId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSelectedQuizStats(response.data);
