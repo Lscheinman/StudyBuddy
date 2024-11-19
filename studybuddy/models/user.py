@@ -1,9 +1,10 @@
 # models.py
 
+import os
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
 from sqlalchemy.orm import relationship, Session
-from database import Base
+from database import Base, SessionLocal
 from passlib.context import CryptContext
 from utils.utils import verify_password
 from sqlalchemy.sql import func
@@ -82,3 +83,31 @@ class User(Base):
         except Exception as e:
             print(f"Error serializing user {self.id}: {e}")
             raise
+
+    def create_admin():
+        """
+        Create a default admin user if it doesn't already exist.
+        """
+        from sqlalchemy.exc import IntegrityError
+
+        admin_username = os.getenv("ADMIN_USERNAME", "admin")
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+
+        with SessionLocal() as db:
+            try:
+                # Check if admin user already exists
+                existing_admin = db.query(User).filter_by(username=admin_username).first()
+                if existing_admin:
+                    print("Admin user already exists.")
+                    return
+
+                # Create admin user
+                hashed_password = pwd_context.hash(admin_password)
+                admin_user = User(username=admin_username, password=hashed_password, is_admin=1)
+                db.add(admin_user)
+                db.commit()
+                print(f"Admin user '{admin_username}' created successfully.")
+            except IntegrityError as e:
+                db.rollback()
+                print(f"Error creating admin user: {e}")
+

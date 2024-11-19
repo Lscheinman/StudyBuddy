@@ -1,45 +1,45 @@
 import os
-from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from database import SessionLocal, engine
 from models import User
 from utils.utils import hash_password
 
-# Load environment variables
-load_dotenv()
-
-def create_admin_user(db: Session):
+def create_admin_user():
     """
-    Create a default admin user if it doesn't exist.
+    Create the default admin user based on the environment variable `ADMIN_PASSWORD`.
+    If the admin user already exists, skip creation.
     """
-    admin_username = "admin"
-    admin_password = os.getenv("ADMIN_PASSWORD")
+    session: Session = SessionLocal()
 
-    if not admin_password:
-        raise RuntimeError("ADMIN_PASSWORD is not set in the .env file")
+    try:
+        # Check if an admin user already exists
+        admin_user = session.query(User).filter(User.username == "admin").first()
+        if admin_user:
+            print("Admin user already exists. Skipping creation.")
+            return
 
-    # Check if admin already exists
-    admin_user = db.query(User).filter(User.username == admin_username).first()
-    if admin_user:
-        print("Admin user already exists.")
-        return
+        # Fetch the password from environment variables
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        if not admin_password:
+            print("Environment variable ADMIN_PASSWORD not set.")
+            return
 
-    # Create the admin user
-    new_admin = User(
-        username=admin_username,
-        password=hash_password(admin_password),
-        is_admin=True,
-    )
-    db.add(new_admin)
-    db.commit()
-    print("Admin user created successfully.")
+        # Create the admin user
+        hashed_password = hash_password(admin_password)
+        admin_user = User(
+            username="admin",
+            password=hashed_password,
+            is_admin=1,  # Assuming 1 indicates admin
+            created_on=None  # Set created_on to None; it will default to current timestamp
+        )
+        session.add(admin_user)
+        session.commit()
+        print("Admin user created successfully.")
+    except Exception as e:
+        print(f"Error creating admin user: {e}")
+    finally:
+        session.close()
 
-def initialize_database():
-    """
-    Run all initialization tasks.
-    """
-    with SessionLocal() as db:
-        create_admin_user(db)
-
+# Run the function when the script is executed
 if __name__ == "__main__":
-    initialize_database()
+    create_admin_user()

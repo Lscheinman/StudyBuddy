@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: ./studybuddy
+      dockerfile: Dockerfile
+    container_name: studybuddy-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./studybuddy:/app
+    env_file:
+      - ./studybuddy/.env
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: studybuddy-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:13
+    container_name: studybuddy-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: studybuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

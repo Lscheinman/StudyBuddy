@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from models import User, Quiz, Report  # Import models to ensure tables are created
 from routes import user_routes, quiz_routes, report_routes
-from utils.initialize import initialize_database
 
 # Application Initialization
 Base.metadata.create_all(bind=engine)  # Initialize database tables
@@ -20,10 +19,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-initialize_database()  # Initialize the database with sample data
+User.create_admin()  # Ensure admin user exists
 
 # CORS Middleware
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost",  # Frontend running on default port 80
+    "http://localhost:3000",  # Development environment
+    "http://127.0.0.1",  # Another local reference
+    "http://intcitium.com",  
+    "https://intcitium.com"  # Include HTTPS if using SSL
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
