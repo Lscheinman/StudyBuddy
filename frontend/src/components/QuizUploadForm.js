@@ -19,9 +19,13 @@ const QuizUploadForm = ({ token, onQuizUpload }) => {
     formData.append('name', name);
 
     try {
-      const response = await axios.post('${process.env.REACT_APP_BACKEND_URL}/quizzes/upload-csv', formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/quizzes/upload-csv`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       onQuizUpload(response.data);
       setFile(null);
       setName('');

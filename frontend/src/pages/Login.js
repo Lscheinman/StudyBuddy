@@ -20,9 +20,13 @@ const Login = () => {
     formData.append('password', password);
 
     try {
-      const response = await axios.post('${process.env.REACT_APP_BACKEND_URL}/users/token', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      });
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/users/token`,
+        formData,
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        }
+      );
       login(response.data.access_token);
       navigate('/dashboard');
     } catch (err) {
