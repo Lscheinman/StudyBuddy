@@ -26,6 +26,7 @@ origins = [
     "http://localhost",  # Frontend running on default port 80
     "http://localhost:3000",  # Development environment
     "http://127.0.0.1",  # Another local reference
+    "http://46.101.235.156/",  # DigitalOcean droplet
     "http://intcitium.com",  
     "https://intcitium.com"  # Include HTTPS if using SSL
 ]
