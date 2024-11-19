@@ -34,7 +34,7 @@ const QuizStats = ({ quizStats, onStartQuiz }) => (
           }}
         >
           <Typography variant="h4" component="div" fontWeight="bold" color="primary">
-            {quizStats.average_score}
+            {quizStats.average_score ? `${(quizStats.average_score).toFixed(1)}%` : "N/A"}
           </Typography>
           <Typography variant="caption" color="textSecondary">
             Average Score
