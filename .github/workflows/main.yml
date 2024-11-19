@@ -19,6 +19,6 @@ jobs:
       - name: Deploy to DigitalOcean
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ dop_v1_f6fb1c1de7faddaf4639e411b2c922875c9d245cb1645bc546c168f4dd8297f4 }}
+          token: ${{  }}
           command: >
             apps create-deployment --app <your-app-id>
