@@ -12,11 +12,12 @@ from routes import user_routes, quiz_routes, report_routes
 
 # Application Initialization
 Base.metadata.create_all(bind=engine)  # Initialize database tables
-
+root_path = os.getenv("ROOT_PATH", "/")  # Default to "/" if ROOT_PATH is not set
 app = FastAPI(
     title="StudyBuddy API",
     description="An API for quizzes and reports.",
-    version="1.0.0"
+    version="1.0.0",
+    root_path=root_path
 )
 
 User.create_admin()  # Ensure admin user exists
