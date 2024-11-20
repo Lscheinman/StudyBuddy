@@ -62,6 +62,7 @@ services:
       - ./certs:/etc/ssl/certs
       - ./letsencrypt:/etc/letsencrypt
       - ./letsencrypt-www:/var/www/certbot
+      - ./letsencrypt/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
     ports:
       - "80:80"
       - "443:443"
