@@ -16,7 +16,7 @@ const QuizStats = ({ quizStats, onStartQuiz }) => (
           }}
         >
           <Typography variant="h4" component="div" fontWeight="bold" color="primary">
-            {quizStats.highest_score}
+            {quizStats.highest_score.toFixed(1)}
           </Typography>
           <Typography variant="caption" color="textSecondary">
             Highest Score
