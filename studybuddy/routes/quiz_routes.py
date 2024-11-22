@@ -1,13 +1,17 @@
+import os
 import random
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from datetime import datetime
 from database import get_db
 import pandas as pd
 from models import User, Quiz, Report
 from dependencies import get_current_user
 
 router = APIRouter()
+
+# Define the maximum number of quizzes a user can upload
+MAX_QUIZZES_PER_USER = int(os.getenv("MAX_QUIZZES_PER_USER", 10))  # Default is 10
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
@@ -37,6 +41,13 @@ async def upload_csv(
     """
     Upload a CSV file to create a new quiz with a unique name.
     """
+    # Check if the quiz limit has been reached
+    user_quiz_count = db.query(func.count(Quiz.id)).filter(Quiz.created_by == current_user.id).scalar()
+    if user_quiz_count >= MAX_QUIZZES_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You have reached the limit of {MAX_QUIZZES_PER_USER} quizzes."
+        )
     if Quiz.get_quiz_by_name(db, name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

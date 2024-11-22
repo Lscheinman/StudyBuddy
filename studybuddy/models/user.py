@@ -23,6 +23,7 @@ class User(Base):
     password = Column(String, nullable=False)  # Store hashed passwords
     created_on = Column(DateTime, default=datetime.utcnow)
     is_admin = Column(Integer, default=0) # 1 if user is an admin, 0 otherwise
+    max_quizzes = Column(Integer, default=int(os.getenv("MAX_QUIZZES_PER_USER", 10)))
 
     # Relationships
     quizzes = relationship("Quiz", back_populates="creator", cascade="all, delete-orphan")
@@ -30,6 +31,7 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(username='{self.username}', created_on='{self.created_on}')>"
+
 
     def verify_password(self, plain_password: str, hashed_password: str):
         """Verify the provided password against the stored hashed password."""
