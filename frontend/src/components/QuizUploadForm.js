@@ -4,6 +4,7 @@ import { TextField, Button, Box, Typography } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AddIcon from '@mui/icons-material/Add';
 import { toast } from 'react-toastify';
+import config from './config';
 import 'react-toastify/dist/ReactToastify.css';
 
 const QuizUploadForm = ({ token, onQuizUpload }) => {
@@ -20,7 +21,7 @@ const QuizUploadForm = ({ token, onQuizUpload }) => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/quizzes/upload-csv`,
+        `${config.BACKEND_URL}/quizzes/upload-csv`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` },

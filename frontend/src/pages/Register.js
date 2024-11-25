@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import axios from 'axios';
+import config from './config';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Container } from '@mui/material';
 
@@ -14,7 +15,7 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(process.env.REACT_APP_BACKEND_URL + '/users/register', {
+      await axios.post(config.BACKEND_URL + '/users/register', {
         username,
         password,
       });

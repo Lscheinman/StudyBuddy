@@ -8,6 +8,7 @@ import { Box, Typography, Container, Paper, Divider } from '@mui/material';
 import QuizUploadForm from '../components/QuizUploadForm'; 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import config from './config';
 
 const Dashboard = () => {
   const { token, logout } = useContext(AuthContext);
@@ -19,7 +20,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/me`, {
+        const response = await axios.get(`${config.BACKEND_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUserProfile(response.data);
@@ -33,7 +34,7 @@ const Dashboard = () => {
 
     const fetchQuizzes = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/quizzes`, {
+        const response = await axios.get(`${config.BACKEND_URL}/quizzes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setQuizzes(response.data);
@@ -54,7 +55,7 @@ const Dashboard = () => {
   const handleQuizSelect = async (quizId) => {
     setSelectedQuiz(quizId);
     try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/quizzes/${quizId}`, {
+      const response = await axios.get(`${config.BACKEND_URL}/quizzes/${quizId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSelectedQuizStats(response.data);

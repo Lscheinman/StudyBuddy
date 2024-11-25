@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { Box, Button, TextField, Typography, Container, Divider } from '@mui/material';
+import config from './config';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -21,7 +22,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/users/token`,
+        `${config.BACKEND_URL}/users/token`,
         formData,
         {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
