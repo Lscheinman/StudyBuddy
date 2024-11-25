@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import config from './config';
+import config from '../config';
 import QuizCard from '../components/QuizCard';
 import NavBar from '../components/NavBar';
 import QuestionsProgressChart from '../components/QuestionsProgressChart';

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { Box, Button, TextField, Typography, Container, Divider } from '@mui/material';
-import config from './config';
+import config from '../config';
 
 const Login = () => {
   const [username, setUsername] = useState('');

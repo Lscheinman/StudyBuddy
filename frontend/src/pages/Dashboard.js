@@ -8,7 +8,7 @@ import { Box, Typography, Container, Paper, Divider } from '@mui/material';
 import QuizUploadForm from '../components/QuizUploadForm'; 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import config from './config';
+import config from '../config';
 
 const Dashboard = () => {
   const { token, logout } = useContext(AuthContext);
