@@ -68,19 +68,23 @@ class Report(Base):
 
         db.commit()
 
-    def log_answer(self, question: str, user_answer: str, correct_answer: str) -> str:
+    def log_answer(self, question: str, user_answer, correct_answer) -> str:
         """
         Log an answer as correct or incorrect and update totals.
         """
-        if user_answer.strip().lower() == correct_answer.strip().lower():
+        # Convert user_answer and correct_answer to strings
+        user_answer_str = str(user_answer).strip().lower()
+        correct_answer_str = str(correct_answer).strip().lower()
+
+        if user_answer_str == correct_answer_str:
             self.total_correct += 1
             return "correct"
         else:
             self.total_incorrect += 1
             self.incorrect_answers.append({
                 "question": question,
-                "user_answer": user_answer,
-                "correct_answer": correct_answer,
+                "user_answer": user_answer,  # Keep original value for clarity
+                "correct_answer": correct_answer,  # Keep original value for clarity
             })
             return "incorrect"
 

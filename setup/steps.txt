@@ -1,3 +1,7 @@
+cp -r /root/StudyBuddy/frontend/build/* /var/www/frontend/
+
+
+
 sudo apt-get update
 
 sudo apt install python3-certbot-nginx
@@ -9,6 +13,13 @@ sudo ufw allow 443
 sudo ufw reload
 
 sudo certbot --nginx -d intcitium.com -d www.intcitium.com
+
+
+root@dockeronubuntu2204-s-2vcpu-2gb-fra1-01:~/StudyBuddy/studybuddy# python3 -m venv venv
+root@dockeronubuntu2204-s-2vcpu-2gb-fra1-01:~/StudyBuddy/studybuddy# source venv/bin/activate
+(venv) root@dockeronubuntu2204-s-2vcpu-2gb-fra1-01:~/StudyBuddy/studybuddy# pip install --upgrade pip  # Upgrade pip to the latest version
+Requirement already satisfied: pip in ./venv/lib/python3.12/site-packages (24.3.1)
+(venv) root@dockeronubuntu2204-s-2vcpu-2gb-fra1-01:~/StudyBuddy/studybuddy# pip install -r requirements.txt
 
 
 
