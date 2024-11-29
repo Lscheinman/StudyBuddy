@@ -12,7 +12,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend         # Path remains the same for the frontend
+      context: . 
+      dockerfile: ./frontend/Dockerfile        
     container_name: frontend
     restart: always
     expose:
