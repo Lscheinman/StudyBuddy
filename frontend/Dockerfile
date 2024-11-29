@@ -1,4 +1,4 @@
-# Build stage
+# Build Stage
 FROM node:18 AS builder
 
 # Set working directory
@@ -12,11 +12,23 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Serve stage
+# Serve Stage
 FROM nginx:alpine
 
-# Copy build files to NGINX web root
-COPY --from=builder /app/build /usr/share/nginx/html
+# Set working directory in NGINX container
+WORKDIR /usr/share/nginx/html
 
-# Expose port
+# Remove the default NGINX static files
+RUN rm -rf ./*
+
+# Copy React build files to NGINX web root
+COPY --from=builder /app/build .
+
+# Copy custom NGINX configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
 EXPOSE 80
+
+# Start NGINX
+CMD ["nginx", "-g", "daemon off;"]
