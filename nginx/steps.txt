@@ -1,0 +1,17 @@
+Install docker
+
+# Set the ssl for github
+ssh-keygen -t rsa -b 4096 -C "lscheinman77@gmail.com"
+cat ~/.ssh/id_rsa.pub
+
+git config --global user.name lscheinman"
+git config --global user.email "lscheinman77@gmail.com"
+
+
+Check firewalls
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw reload
+
+
+Get the certificates: 
