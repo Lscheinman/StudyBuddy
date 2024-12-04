@@ -11,6 +11,21 @@ The **StudyBuddy API** is a FastAPI-based application for managing vocabulary qu
 
 ## Getting Started
 
+The following steps will download the latest version, pre-build the front end, and then run the application.
+
+   ```bash
+   git clone https://github.com/your-username/studybuddy.git
+   cd StudyBuddy/frontend
+
+   npm install
+   npm run build
+
+   cd ..
+
+   docker compose up -d
+
+   ```
+
 ### Prerequisites
 
 Ensure you have the following installed:
