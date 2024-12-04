@@ -7,7 +7,7 @@ import NavBar from '../components/NavBar';
 import QuestionsProgressChart from '../components/QuestionsProgressChart';
 import AnswerAccuracyChart from '../components/AnswerAccuracyChart';
 import AuthContext from '../context/AuthContext';
-import { ToastContainer, toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   Accordion,
@@ -174,7 +174,6 @@ const Quiz = () => {
   return (
     <div>
       <NavBar />
-      <ToastContainer />
       {!completed ? (
         <QuizCard question={question} onSubmit={submitAnswer} />
       ) : (

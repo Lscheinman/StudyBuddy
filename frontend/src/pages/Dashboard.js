@@ -6,8 +6,7 @@ import QuizList from '../components/QuizList';
 import QuizStats from '../components/QuizStats'; 
 import { Box, Typography, Container, Paper, Divider } from '@mui/material';
 import QuizUploadForm from '../components/QuizUploadForm'; 
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import toast from 'react-hot-toast';
 import config from '../config';
 
 const Dashboard = () => {
@@ -68,7 +67,6 @@ const Dashboard = () => {
   return (
     <>
       <NavBar />
-      <ToastContainer />
       <Container maxWidth="lg" style={{ minHeight: '100vh', paddingTop: '32px' }}>
         <Paper elevation={3} style={{ padding: '24px' }}>
           <Typography variant="h4" gutterBottom style={{ fontWeight: 'bold' }}>

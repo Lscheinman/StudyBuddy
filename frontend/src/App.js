@@ -3,6 +3,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -21,6 +22,7 @@ const App = () => (
         <Route path="*" element={<NotFound />} /> {/* Catch-all route for unmatched paths */}
       </Routes>
     </Router>
+    <Toaster />
   </AuthProvider>
 );
 

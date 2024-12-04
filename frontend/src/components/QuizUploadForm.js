@@ -3,9 +3,8 @@ import axios from 'axios';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AddIcon from '@mui/icons-material/Add';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import config from '../config';
-import 'react-toastify/dist/ReactToastify.css';
 
 const QuizUploadForm = ({ token, onQuizUpload }) => {
   const [file, setFile] = useState(null);
